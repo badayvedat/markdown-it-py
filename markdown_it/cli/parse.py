@@ -13,8 +13,14 @@ import sys
 
 from markdown_it import __version__
 from markdown_it.main import MarkdownIt
+from mdit_py_plugins.footnote import footnote_plugin
+from mdit_py_plugins.dollarmath import dollarmath_plugin
+from mdit_py_plugins.anchors import anchors_plugin
 
-version_str = f"markdown-it-py [version {__version__}]"
+import latex2mathml.converter
+
+
+version_str = "markdown-it-py [version {}]".format(__version__)
 
 
 def main(args: Sequence[str] | None = None) -> int:
@@ -36,8 +42,13 @@ def convert_file(filename: str) -> None:
     Parse a Markdown file and dump the output to stdout.
     """
     try:
-        with open(filename, encoding="utf8", errors="ignore") as fin:
-            rendered = MarkdownIt().render(fin.read())
+        with open(filename, "r", encoding="utf8", errors="ignore") as fin:
+            rendered = MarkdownIt('commonmark', {'breaks': True, 'html': True}) \
+                .use(footnote_plugin) \
+                .use(dollarmath_plugin, renderer=latex2mathml.converter.convert) \
+                .use(anchors_plugin) \
+                .enable('table') \
+                .render(fin.read())
             print(rendered, end="")
     except OSError:
         sys.stderr.write(f'Cannot open file "{filename}".\n')
